@@ -1,0 +1,3 @@
+SMB_USERNAME: user
+SMB_PASSWORD: admin123!
+SMB_USER_SHELL: /bin/bash
