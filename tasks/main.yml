@@ -1,0 +1,53 @@
+- name: Installing Samba Share (Debian 12)
+  tags: smb
+  apt:
+    name:
+      - samba
+
+- name: Create Group smbshare
+  tags: smb
+  ansible.builtin.group:
+    name: smbshare
+
+- name: Creating Share directory (/share)
+  tags: smb
+  command: mkdir /share
+  args:
+    creates: /share # Check if the directory already exists
+
+- name: Set ownership and permission for /share 
+  tags: smb
+  file:
+    path: /share
+    state: directory
+    # owner: smbshare
+    group: smbshare
+    mode: "0770"
+
+- name: Create SMB user
+  tags: smb
+  user:
+    name: "{{ SMB_USERNAME }}"
+    shell: "{{ SMB_USER_SHELL }}"
+    state: present
+    groups: smbshare
+    append: yes
+  when: SMB_USERNAME is defined
+
+- name: Set Password for SMB User PAM
+  tags: smb
+  ansible.builtin.shell:
+    cmd: echo '{{ SMB_USERNAME }}:{{ SMB_PASSWORD }}' | chpasswd
+  when: SMB_USERNAME is defined
+
+- name: Adding The user for Samba database and setting password
+  tags: smb
+  shell: "printf '{{ SMB_PASSWORD }}\n{{ SMB_PASSWORD }}\n'  | smbpasswd -a '{{ SMB_USERNAME }}'"
+- name: Copying the smb.conf
+  tags: smb
+  copy:
+    src: smb.conf
+    dest: /etc/samba/smb.conf
+    force: yes
+  notify:
+    - samba
